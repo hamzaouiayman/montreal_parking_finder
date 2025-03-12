@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}About - Montreal Parking Finder{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1 class="mb-4">About Montreal Parking Finder</h1>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">What is Montreal Parking Finder?</h5>
+                    <p>
+                        Montreal Parking Finder is an application designed to help drivers find free parking spots in Montreal
+                        by analyzing the city's complex parking signalization system. The app uses official parking sign data
+                        from the City of Montreal's open data portal and integrates it with OpenStreetMap to provide
+                        accurate, real-time parking information.
+                    </p>
+                    <p>
+                        Finding parking in Montreal can be challenging due to the complex system of signs and rules that
+                        vary by time, day, and season. Our app simplifies this process by interpreting these rules and
+                        showing you exactly where you can park at any given time.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">How It Works</h5>
+                    <p>The Montreal Parking Finder works through a multi-step process:</p>
+                    
+                    <ol>
+                        <li><strong>Data Collection:</strong> We use the City of Montreal's parking signalization dataset,
+                        which contains information about all parking signs in the city.</li>
+                        
+                        <li><strong>Sign Interpretation:</strong> Our advanced parsing algorithm interprets the complex
+                        restrictions on each sign, including time periods, days of the week, and seasonal restrictions.</li>
+                        
+                        <li><strong>Street Mapping:</strong> We connect each sign to its corresponding street segment using
+                        OpenStreetMap data to create intervals where parking rules apply.</li>
+                        
+                        <li><strong>Time-Based Analysis:</strong> The app checks the current date and time against the parsed
+                        restrictions to determine if parking is currently allowed on each street segment.</li>
+                        
+                        <li><strong>Visualization:</strong> Results are displayed on an interactive map with color-coded
+                        street segments: green for free parking and red for restricted or paid parking.</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Features</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul>
+                                <li>Real-time parking availability</li>
+                                <li>Interactive maps</li>
+                                <li>Location-based search</li>
+                                <li>Time-aware restrictions</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul>
+                                <li>Adjustable search radius</li>
+                                <li>Address search</li>
+                                <li>Detailed restriction information</li>
+                                <li>Mobile-friendly interface</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Data Sources</h5>
+                    <p>
+                        The application uses data from the following sources:
+                    </p>
+                    <ul>
+                        <li>
+                            <a href="https://donnees.montreal.ca/ville-de-montreal/signalisation-stationnement" target="_blank">
+                                Montreal Parking Signalization Data
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://www.openstreetmap.org" target="_blank">
+                                OpenStreetMap
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Limitations</h5>
+                    <p>
+                        While we strive to provide accurate information, please note:
+                    </p>
+                    <ul>
+                        <li>The app relies on official data which may not reflect recent changes to parking signs</li>
+                        <li>Temporary restrictions due to construction, events, or snow removal are not included</li>
+                        <li>Always verify parking rules by checking the actual signs on location</li>
+                        <li>The application is not responsible for parking tickets or towing fees</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Contact & Support</h5>
+                    <p>
+                        Have questions, feedback, or issues with the app?
+                    </p>
+                    <p>
+                        Email us at: <a href="mailto:support@montrealparkingfinder.com">support@montrealparkingfinder.com</a>
+                    </p>
+                    <p>
+                        <a href="https://github.com/yourusername/montreal-parking-finder" target="_blank" class="btn btn-outline-primary">
+                            <i class="bi bi-github"></i> GitHub Repository
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

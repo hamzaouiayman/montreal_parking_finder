@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block title %}Find Parking - Montreal Parking Finder{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1 class="mb-4">Find Parking</h1>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Search Options</h5>
+                    
+                    <div class="mb-3">
+                        <button id="useLocationBtn" class="btn btn-primary w-100">Use My Location</button>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="searchAddress" class="form-label">Address Search</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="searchAddress" placeholder="Enter address">
+                            <button class="btn btn-outline-secondary" type="button" id="searchAddressBtn">Search</button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Coordinates</label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">Lat</span>
+                            <input type="number" class="form-control" id="latitude" step="0.000001" placeholder="45.5017">
+                        </div>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">Lon</span>
+                            <input type="number" class="form-control" id="longitude" step="0.000001" placeholder="-73.5673">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="searchRadius" class="form-label">Search Radius (km)</label>
+                        <input type="range" class="form-range" id="searchRadius" min="0.1" max="1" step="0.1" value="0.2">
+                        <div class="text-center" id="radiusValue">0.2 km</div>
+                    </div>
+                    
+                    <button id="findParkingBtn" class="btn btn-success w-100">Find Parking</button>
+                    
+                    <div id="searchSpinner" class="text-center mt-3" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p>Searching for parking...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Results</h5>
+                    <div id="resultsContainer">
+                        <p class="text-muted">Search to see parking availability.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div id="map"></div>
+            
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Legend</h5>
+                    <div class="d-flex justify-content-start">
+                        <div class="me-4">
+                            <span class="badge p-2 me-1" style="background-color: green;"></span>
+                            <span>Free Parking</span>
+                        </div>
+                        <div class="me-4">
+                            <span class="badge p-2 me-1" style="background-color: red;"></span>
+                            <span>No Parking / Paid</span>
+                        </div>
+                        <div>
+                            <span class="badge p-2 me-1" style="background-color: blue;"></span>
+                            <span>Your Location</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize map
+    const map = L.map('map').setView([45.5017, -73.5673], 15);
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    
+    // Variable to store markers and lines
+    let markers = [];
+    let lines = [];
+    let userMarker = null;
+    
+    // Update radius value display
+    document.getElementById('searchRadius').addEventListener('input', function() {
+        document.getElementById('radiusValue').innerText = this.value + ' km';
+    });
+    
+    // Use current location
+    document.getElementById('useLocationBtn').addEventListener('click', function() {
+        if (navigator.geolocation) {
+            document.getElementById('searchSpinner').style.display = 'block';
+            
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                
+                // Update form fields
+                document.getElementById('latitude').value = lat;
+                document.getElementById('longitude').value = lon;
+                
+                // Update map
+                map.setView([lat, lon], 16);
+                
+                // Add or update user marker
+                if (userMarker) {
+                    userMarker.setLatLng([lat, lon]);
+                } else {
+                    userMarker = L.marker([lat, lon], {
+                        icon: L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        })
+                    }).addTo(map);
+                }
+                
+                document.getElementById('searchSpinner').style.display = 'none';
+                
+                // Automatically search for parking
+                findParking();
+            }, function(error) {
+                document.getElementById('searchSpinner').style.display = 'none';
+                alert('Error getting location: ' + error.message);
+            });
+        } else {
+            alert('Geolocation is not supported by this browser.');
+        }
+    });
+    
+    // Search for address
+    document.getElementById('searchAddressBtn').addEventListener('click', function() {
+        const address = document.getElementById('searchAddress').value;
+        if (!address) return;
+        
+        document.getElementById('searchSpinner').style.display = 'block';
+        
+        // Use Nominatim for geocoding
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}+Montreal`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+                    
+                    // Update form fields
+                    document.getElementById('latitude').value = lat;
+                    document.getElementById('longitude').value = lon;
+                    
+                    // Update map
+                    map.setView([lat, lon], 16);
+                    
+                    // Add or update user marker
+                    if (userMarker) {
+                        userMarker.setLatLng([lat, lon]);
+                    } else {
+                        userMarker = L.marker([lat, lon], {
+                            icon: L.icon({
+                                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                                iconSize: [25, 41],
+                                iconAnchor: [12, 41],
+                                popupAnchor: [1, -34],
+                                shadowSize: [41, 41]
+                            })
+                        }).addTo(map);
+                    }
+                    
+                    // Automatically search for parking
+                    findParking();
+                } else {
+                    alert('Address not found. Please try a different address.');
+                    document.getElementById('searchSpinner').style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error geocoding address:', error);
+                document.getElementById('searchSpinner').style.display = 'none';
+                alert('Error searching for address. Please try again.');
+            });
+    });
+    
+    // Find parking button
+    document.getElementById('findParkingBtn').addEventListener('click', findParking);
+    
+    // Main function to find parking
+    function findParking() {
+        // Get inputs
+        const lat = parseFloat(document.getElementById('latitude').value);
+        const lon = parseFloat(document.getElementById('longitude').value);
+        const radius = parseFloat(document.getElementById('searchRadius').value);
+        
+        // Validate inputs
+        if (isNaN(lat) || isNaN(lon) || isNaN(radius)) {
+            alert('Please enter valid coordinates and radius.');
+            return;
+        }
+        
+        document.getElementById('searchSpinner').style.display = 'block';
+        
+        // Clear existing markers and lines
+        clearMapElements();
+        
+        // Add or update user marker
+        if (userMarker) {
+            userMarker.setLatLng([lat, lon]);
+        } else {
+            userMarker = L.marker([lat, lon], {
+                icon: L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                })
+            }).addTo(map);
+        }
+        
+        // Add circle to show search radius
+        const circle = L.circle([lat, lon], {
+            color: 'blue',
+            fillColor: '#30f',
+            fillOpacity: 0.1,
+            radius: radius * 1000 // Convert km to meters
+        }).addTo(map);
+        
+        // Center map on location with appropriate zoom
+        map.setView([lat, lon], getZoomLevel(radius));
+        
+        // Search for parking via API
+        fetch('/api/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                latitude: lat,
+                longitude: lon,
+                radius: radius
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('searchSpinner').style.display = 'none';
+            
+            if (data.success) {
+                displayResults(data);
+            } else {
+                document.getElementById('resultsContainer').innerHTML = `
+                    <div class="alert alert-warning" role="alert">
+                        ${data.message || 'No parking data found.'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error searching for parking:', error);
+            document.getElementById('searchSpinner').style.display = 'none';
+            document.getElementById('resultsContainer').innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    Error searching for parking. Please try again.
+                </div>
+            `;
+        });
+    }
+    
+    // Display search results
+    function displayResults(data) {
+        const results = data.results;
+        
+        // Update results container
+        let freeCount = 0;
+        let restrictedCount = 0;
+        
+        results.forEach(result => {
+            if (result.is_allowed) {
+                freeCount++;
+            } else {
+                restrictedCount++;
+            }
+        });
+        
+        document.getElementById('resultsContainer').innerHTML = `
+            <p><strong>Results as of:</strong> ${data.timestamp}</p>
+            <p><strong>Total intervals:</strong> ${data.count}</p>
+            <p><strong>Free parking spots:</strong> ${freeCount}</p>
+            <p><strong>Restricted spots:</strong> ${restrictedCount}</p>
+        `;
+        
+        // Add markers and lines to map
+        results.forEach(result => {
+            // Define colors
+            const color = result.is_allowed ? 'green' : 'red';
+            
+            // Create line for interval
+            const line = L.polyline([
+                [result.start_lat, result.start_lon],
+                [result.end_lat, result.end_lon]
+            ], {
+                color: color,
+                weight: 5,
+                opacity: 0.7
+            }).addTo(map);
+            
+            // Add popup with info
+            line.bindPopup(`
+                <strong>${result.street_name}</strong><br>
+                ${result.is_allowed ? 'Parking Allowed' : 'Parking Restricted/Paid'}<br>
+                ${result.description}
+            `);
+            
+            // Track for later cleanup
+            lines.push(line);
+            
+            // Add marker at sign location
+            const marker = L.marker([result.latitude, result.longitude], {
+                icon: L.icon({
+                    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                })
+            }).addTo(map);
+            
+            marker.bindPopup(`
+                <strong>${result.street_name}</strong><br>
+                ${result.is_allowed ? 'Parking Allowed' : 'Parking Restricted/Paid'}<br>
+                ${result.description}
+            `);
+            
+            markers.push(marker);
+        });
+    }
+    
+    // Helper function to clear map elements
+    function clearMapElements() {
+        // Remove all markers except user marker
+        markers.forEach(marker => map.removeLayer(marker));
+        markers = [];
+        
+        // Remove all lines
+        lines.forEach(line => map.removeLayer(line));
+        lines = [];
+        
+        // Remove radius circles
+        map.eachLayer(layer => {
+            if (layer instanceof L.Circle) {
+                map.removeLayer(layer);
+            }
+        });
+    }
+    
+    // Helper function to get appropriate zoom level based on radius
+    function getZoomLevel(radius) {
+        if (radius <= 0.1) return 18;
+        if (radius <= 0.2) return 17;
+        if (radius <= 0.5) return 16;
+        if (radius <= 1) return 15;
+        return 14;
+    }
+</script>
+{% endblock %}

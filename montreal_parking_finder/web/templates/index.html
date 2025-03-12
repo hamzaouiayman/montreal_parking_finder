@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Montreal Parking Finder{% endblock %}
+
+{% block content %}
+<div class="py-5">
+    <h1 class="mb-4">Find Free Parking in Montreal</h1>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Analyze an Area</h5>
+                    <p class="card-text">Generate a detailed parking map for a specific area in Montreal.</p>
+                    
+                    <form action="/analyze" method="post">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Area Name</label>
+                            <input type="text" class="form-control" id="name" name="name" placeholder="e.g., Downtown Montreal">
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="latitude" class="form-label">Latitude</label>
+                                <input type="number" step="0.000001" class="form-control" id="latitude" name="latitude" value="{{ default_lat }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="longitude" class="form-label">Longitude</label>
+                                <input type="number" step="0.000001" class="form-control" id="longitude" name="longitude" value="{{ default_lon }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="radius" class="form-label">Radius (km)</label>
+                            <input type="number" step="0.1" min="0.1" max="5" class="form-control" id="radius" name="radius" value="{{ default_radius }}" required>
+                            <div class="form-text">Maximum recommended radius is 2 km for performance reasons.</div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Analyze Area</button>
+                        <button type="button" class="btn btn-secondary" id="useMyLocation">Use My Location</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Quick Search</h5>
+                    <p class="card-text">Looking for parking right now? Use our quick search to find available parking near you.</p>
+                    <a href="/search" class="btn btn-success">Find Parking Now</a>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">How It Works</h5>
+                    <p class="card-text">Montreal Parking Finder analyzes Montreal's parking signalization data to help you find free parking spots.</p>
+                    <ul>
+                        <li>Green lines indicate where parking is currently allowed</li>
+                        <li>Red lines indicate where parking is restricted or paid</li>
+                        <li>The app considers time-based restrictions</li>
+                    </ul>
+                    <a href="/about" class="btn btn-info">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('useMyLocation').addEventListener('click', function() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                document.getElementById('latitude').value = position.coords.latitude;
+                document.getElementById('longitude').value = position.coords.longitude;
+            }, function(error) {
+                alert('Error getting location: ' + error.message);
+            });
+        } else {
+            alert('Geolocation is not supported by this browser.');
+        }
+    });
+</script>
+{% endblock %}

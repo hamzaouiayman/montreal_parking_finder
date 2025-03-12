@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Task Status - Montreal Parking Finder{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1 class="mb-4">Task Status</h1>
+    
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">
+                <span id="taskName">{{ task.name }}</span>
+                <span class="badge rounded-pill" id="statusBadge">{{ task.status }}</span>
+            </h5>
+            
+            <div class="progress">
+                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                     role="progressbar" style="width: {{ task.progress }}%;" 
+                     aria-valuenow="{{ task.progress }}" aria-valuemin="0" aria-valuemax="100">
+                    {{ task.progress }}%
+                </div>
+            </div>
+            
+            <div class="mt-3" id="taskDetails">
+                <p><strong>Task ID:</strong> {{ task.id }}</p>
+                <p><strong>Location:</strong> {{ task.lat }}, {{ task.lon }}</p>
+                <p><strong>Radius:</strong> {{ task.radius }} km</p>
+                <p><strong>Started:</strong> {{ task.created_at }}</p>
+                <p id="message">{{ task.message }}</p>
+            </div>
+            
+            <div id="resultSection" class="mt-4" style="display: none;">
+                <h5>Results</h5>
+                <div id="summaryContainer">
+                    <p><strong>Total Signs:</strong> <span id="totalSigns">-</span></p>
+                    <p><strong>Total Intervals:</strong> <span id="totalIntervals">-</span></p>
+                    <p><strong>Free Parking Intervals:</strong> <span id="freeIntervals">-</span></p>
+                    <p><strong>Restricted/Paid Intervals:</strong> <span id="restrictedIntervals">-</span></p>
+                </div>
+                
+                <div class="mt-3">
+                    <a id="viewMapLink" href="#" class="btn btn-primary" target="_blank">View Map</a>
+                    <a href="/" class="btn btn-secondary">Back to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Function to update the task status
+    function updateTaskStatus() {
+        fetch('/api/task/{{ task.id }}')
+            .then(response => response.json())
+            .then(data => {
+                // Update progress
+                document.getElementById('progressBar').style.width = data.progress + '%';
+                document.getElementById('progressBar').setAttribute('aria-valuenow', data.progress);
+                document.getElementById('progressBar').innerText = data.progress + '%';
+                
+                // Update status badge
+                const statusBadge = document.getElementById('statusBadge');
+                statusBadge.innerText = data.status;
+                
+                // Set badge color based on status
+                statusBadge.className = 'badge rounded-pill';
+                if (data.status === 'completed') {
+                    statusBadge.classList.add('bg-success');
+                } else if (data.status === 'failed') {
+                    statusBadge.classList.add('bg-danger');
+                } else if (data.status === 'running') {
+                    statusBadge.classList.add('bg-primary');
+                } else {
+                    statusBadge.classList.add('bg-secondary');
+                }
+                
+                // Update message if present
+                if (data.message) {
+                    document.getElementById('message').innerText = data.message;
+                }
+                
+                // Show results if completed
+                if (data.status === 'completed') {
+                    document.getElementById('resultSection').style.display = 'block';
+                    
+                    // Update summary information
+                    if (data.summary) {
+                        document.getElementById('totalSigns').innerText = data.summary.total_signs;
+                        document.getElementById('totalIntervals').innerText = data.summary.total_intervals;
+                        document.getElementById('freeIntervals').innerText = data.summary.free_intervals;
+                        document.getElementById('restrictedIntervals').innerText = data.summary.restricted_intervals;
+                    }
+                    
+                    // Set map link
+                    if (data.map_file) {
+                        document.getElementById('viewMapLink').href = '/maps/' + data.map_file;
+                    }
+                    
+                    // Stop polling
+                    clearInterval(pollInterval);
+                }
+                
+                // Show error and stop polling if failed
+                if (data.status === 'failed') {
+                    document.getElementById('message').style.color = 'red';
+                    clearInterval(pollInterval);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching task status:', error);
+            });
+    }
+    
+    // Initial status update
+    updateTaskStatus();
+    
+    // Poll for updates every 2 seconds
+    const pollInterval = setInterval(updateTaskStatus, 2000);
+</script>
+{% endblock %}
