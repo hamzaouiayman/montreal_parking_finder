@@ -8,6 +8,5 @@ folium>=0.12.1
 Flask>=2.0.0
 SQLAlchemy>=1.4.0
 pytest>=6.2.5
-multiprocessing>=0.70.12
 geopy>=2.2.0
 # Add additional libraries as needed

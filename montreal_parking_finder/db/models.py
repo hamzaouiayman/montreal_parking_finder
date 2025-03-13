@@ -50,7 +50,7 @@ class ParkingSign(Base):
         Create a ParkingSign from a DataFrame row.
         """
         return cls(
-            sign_id=str(row.get('ID_PANNEAU', '')),
+            sign_id=str(row.get('PANNEAU_ID_PAN', '')),
             latitude=row['Latitude'],
             longitude=row['Longitude'],
             description=row.get('DESCRIPTION_RPA', ''),

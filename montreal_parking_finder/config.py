@@ -21,7 +21,7 @@ DEFAULT_CENTER_LON = -73.6387
 
 # API settings
 OVERPASS_API_URL = "https://overpass-api.de/api/interpreter"
-OVERPASS_API_DELAY = 0.1  # Seconds delay between API calls
+OVERPASS_API_DELAY = 0.5  # Seconds delay between API calls
 
 # Processing settings
 BATCH_SIZE = 5000  # Number of rows to process in a batch

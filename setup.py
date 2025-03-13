@@ -16,7 +16,6 @@ setup(
         "Flask>=2.0.0",
         "SQLAlchemy>=1.4.0",
         "geopy>=2.2.0",
-        "multiprocessing>=0.70.12",
     ],
     entry_points={
         "console_scripts": [

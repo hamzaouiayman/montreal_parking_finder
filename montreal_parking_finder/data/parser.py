@@ -142,6 +142,7 @@ def parse_batch_restrictions(batch_df):
     Returns:
         DataFrame with parsed restrictions
     """
+    batch_df['sign_id'] = batch_df['POTEAU_ID_POT']
     batch_df['parsed_restriction'] = batch_df['DESCRIPTION_RPA'].apply(parse_restriction)
     
     # Add simplified classifications
